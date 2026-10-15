@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars and fill in. Do NOT commit terraform.tfvars.
+# Set the SQL password via environment variable instead:
+#   PowerShell:  $env:TF_VAR_sql_admin_password = "..."
+#   Bash:        export TF_VAR_sql_admin_password="..."
+
+subscription_id       = "00000000-0000-0000-0000-000000000000"
+databricks_account_id = "00000000-0000-0000-0000-000000000000"
+metastore_id          = "00000000-0000-0000-0000-000000000000"
+
+location    = "westeurope"
+environment = "dev"
+name_suffix = "abc1" # lowercase letters/digits, max 6 chars; makes global names unique
+
+sql_client_ip      = "203.0.113.10" # your public IP (https://ifconfig.me)
+budget_alert_email = "you@example.com"
