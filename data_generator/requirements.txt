@@ -1,0 +1,2 @@
+faker>=30
+azure-eventhub>=5.11

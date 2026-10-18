@@ -107,9 +107,9 @@ shopsphere/
 - ✅ *Deliverable:* Bronze tables, plus a notebook demonstrating schema evolution
 
 ### Week 3: Streaming
-- [ ] Write a Faker generator that sends click events (view, add_to_cart, purchase) to Event Hubs
-- [ ] Structured Streaming into Bronze, then sessionization in Silver with watermarks and windows
-- [ ] Checkpointing, and a demo of failure recovery
+- [x] Write a Faker generator that sends click events (view, add_to_cart, purchase) to Event Hubs
+- [x] Structured Streaming into Bronze, then sessionization in Silver with watermarks and windows
+- [x] Checkpointing, and a demo of failure recovery
 - ✅ *Deliverable:* a live clickstream table plus a funnel conversion metric
 
 ### Week 4: Silver and Gold with Declarative Pipelines

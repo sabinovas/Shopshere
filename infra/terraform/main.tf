@@ -109,14 +109,19 @@ resource "azurerm_role_assignment" "kv_databricks_reader" {
 }
 
 # ---------------------------------------------------------------------------
-# Event Hubs (Basic tier) for the clickstream generator in Week 3
-# Not built yet. Names follow the same pattern as the rest.
+# Event Hubs (Standard tier) for the clickstream generator in Week 3
+# Namespace evhns-shopsphere-dev27. Standard is needed for the Kafka endpoint that
+# Structured Streaming reads; Basic has no Kafka support. Billed hourly, so delete it
+# between streaming sessions to save cost.
+# The two connection strings are stored in Key Vault (eventhub-send-conn,
+# eventhub-listen-conn) with the Azure CLI, so they stay out of Terraform code.
 # ---------------------------------------------------------------------------
 resource "azurerm_eventhub_namespace" "this" {
-  name                = "evhns-${local.name_prefix}-${var.name_suffix}"
+  name                = "evhns-${local.name_prefix}${var.name_suffix}"
   resource_group_name = azurerm_resource_group.this.name
   location            = var.location
-  sku                 = "Basic"
+  sku                 = "Standard"
+  capacity            = 1
   tags                = local.tags
 }
 
@@ -125,6 +130,32 @@ resource "azurerm_eventhub" "clickstream" {
   namespace_id      = azurerm_eventhub_namespace.this.id
   partition_count   = 2
   message_retention = 1
+}
+
+# Consumer group "databricks", kept for tools that read with the Event Hubs SDK.
+# The Spark Kafka reader does not use it: it tracks offsets in its own checkpoint.
+resource "azurerm_eventhub_consumer_group" "databricks" {
+  name                = "databricks"
+  namespace_name      = azurerm_eventhub_namespace.this.name
+  eventhub_name       = azurerm_eventhub.clickstream.name
+  resource_group_name = azurerm_resource_group.this.name
+}
+
+# Send-only rule for the local generator, listen-only rule for Databricks
+resource "azurerm_eventhub_authorization_rule" "generator_send" {
+  name                = "generator-send"
+  namespace_name      = azurerm_eventhub_namespace.this.name
+  eventhub_name       = azurerm_eventhub.clickstream.name
+  resource_group_name = azurerm_resource_group.this.name
+  send                = true
+}
+
+resource "azurerm_eventhub_authorization_rule" "databricks_listen" {
+  name                = "databricks-listen"
+  namespace_name      = azurerm_eventhub_namespace.this.name
+  eventhub_name       = azurerm_eventhub.clickstream.name
+  resource_group_name = azurerm_resource_group.this.name
+  listen              = true
 }
 
 # ---------------------------------------------------------------------------
