@@ -1,9 +1,10 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Bronze: orders, customers and payments from Azure SQL (JDBC)
+# MAGIC # Bronze: orders, customers, payments, order items, reviews from Azure SQL (JDBC)
 # MAGIC
 # MAGIC Reads the Olist tables from `sql-shopsphere-dev27 / shopsphere_olist` and writes
-# MAGIC `shopsphere_dev.bronze.raw_orders`, `raw_customers` and `raw_payments`.
+# MAGIC `shopsphere_dev.bronze.raw_orders`, `raw_customers`, `raw_payments`, `raw_order_items`,
+# MAGIC `raw_reviews` and `raw_category_translation`.
 # MAGIC
 # MAGIC The SQL password comes from the `shopsphere-kv` secret scope (Key Vault secret
 # MAGIC `sql-admin-password`), never from this notebook. Lakeflow Connect could replace this
@@ -27,6 +28,10 @@ SOURCES = {
     "olist_orders": "raw_orders",
     "olist_customers": "raw_customers",
     "olist_order_payments": "raw_payments",
+    # Added in Week 4: needed for the gold star schema (fact_sales, dim_product) and Week 6 features
+    "olist_order_items": "raw_order_items",
+    "olist_order_reviews": "raw_reviews",
+    "product_category_name_translation": "raw_category_translation",
 }
 
 for source_table, bronze_table in SOURCES.items():

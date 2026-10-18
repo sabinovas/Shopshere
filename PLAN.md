@@ -113,11 +113,11 @@ shopsphere/
 - ✅ *Deliverable:* a live clickstream table plus a funnel conversion metric
 
 ### Week 4: Silver and Gold with Declarative Pipelines
-- [ ] Rebuild the flow as a Lakeflow Declarative Pipeline (formerly DLT)
-- [ ] Expectations (warn, drop, fail) and a quarantine table
-- [ ] `AUTO CDC` for customers as SCD Type 2; MERGE for orders
-- [ ] Gold star schema as materialized views; liquid clustering
-- [ ] Delta features: time travel, Change Data Feed, OPTIMIZE and VACUUM, deletion vectors
+- [x] Rebuild the flow as a Lakeflow Declarative Pipeline (formerly DLT)
+- [x] Expectations (warn, drop, fail) and a quarantine table
+- [x] `AUTO CDC` for customers as SCD Type 2; MERGE for orders
+- [x] Gold star schema as materialized views; liquid clustering
+- [x] Delta features: time travel, Change Data Feed, OPTIMIZE and VACUUM, deletion vectors
 - ✅ *Deliverable:* a working medallion pipeline with a data-quality report
 
 ### Week 5: Orchestration, BI and governance
