@@ -94,16 +94,16 @@ shopsphere/
 ## 8. Eight-week plan (about 8–10 hours a week)
 
 ### Week 1: Foundations and infrastructure
-- [ ] Create the Azure resources (first in the portal, then rewrite them in Terraform)
-- [ ] Unity Catalog: metastore assignment, storage credential, external location, catalogs and schemas
-- [ ] Key Vault-backed secret scope; set up Git folders
-- [ ] Load the Olist CSVs into Azure SQL DB
+- [ ] Create the Azure resources (built with the Azure CLI; Terraform import paused, see `docs/commands/terraform.md`)
+- [x] Unity Catalog: metastore assignment, storage credential, external location, catalogs and schemas
+- [x] Key Vault-backed secret scope; set up Git folders
+- [x] Load the Olist CSVs into Azure SQL DB
 - ✅ *Deliverable:* empty, governed lakehouse plus an architecture diagram in the README
 
 ### Week 2: Batch ingestion (Bronze)
-- [ ] Auto Loader for products and sellers (schema inference, schema evolution, rescued data)
-- [ ] JDBC or Lakeflow Connect from Azure SQL for orders, customers and payments
-- [ ] Add metadata columns (`_ingest_ts`, `_source_file`)
+- [x] Auto Loader for products and sellers (schema inference, schema evolution, rescued data)
+- [x] JDBC or Lakeflow Connect from Azure SQL for orders, customers and payments
+- [x] Add metadata columns (`_ingest_ts`, `_source_file`)
 - ✅ *Deliverable:* Bronze tables, plus a notebook demonstrating schema evolution
 
 ### Week 3: Streaming

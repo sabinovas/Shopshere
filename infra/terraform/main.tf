@@ -22,17 +22,19 @@ resource "azurerm_resource_group" "this" {
 # ---------------------------------------------------------------------------
 # ADLS Gen2 storage (hierarchical namespace on) with the three containers
 # from PLAN.md: landing, uc-managed, checkpoints
+# Name: stshopspheredev27
 # ---------------------------------------------------------------------------
 resource "azurerm_storage_account" "lake" {
-  name                     = "st${var.project}${var.environment}${var.name_suffix}"
-  resource_group_name      = azurerm_resource_group.this.name
-  location                 = var.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-  account_kind             = "StorageV2"
-  is_hns_enabled           = true
-  min_tls_version          = "TLS1_2"
-  tags                     = local.tags
+  name                            = "st${var.project}${var.environment}${var.name_suffix}"
+  resource_group_name             = azurerm_resource_group.this.name
+  location                        = var.location
+  account_tier                    = "Standard"
+  account_replication_type        = "LRS"
+  account_kind                    = "StorageV2"
+  is_hns_enabled                  = true
+  min_tls_version                 = "TLS1_2"
+  allow_nested_items_to_be_public = false
+  tags                            = local.tags
 }
 
 resource "azurerm_storage_container" "lake" {
@@ -45,6 +47,7 @@ resource "azurerm_storage_container" "lake" {
 
 # ---------------------------------------------------------------------------
 # Access Connector (managed identity) that Unity Catalog uses to reach storage
+# Name: ac-shopsphere-dev
 # ---------------------------------------------------------------------------
 resource "azurerm_databricks_access_connector" "this" {
   name                = "ac-${local.name_prefix}"
@@ -65,22 +68,24 @@ resource "azurerm_role_assignment" "connector_blob" {
 
 # ---------------------------------------------------------------------------
 # Databricks workspace (Premium is required for Unity Catalog)
+# Name: dbw-shopsphere-dev, managed group: databricks-rg-dbw-shopsphere-dev
 # ---------------------------------------------------------------------------
 resource "azurerm_databricks_workspace" "this" {
   name                        = "dbw-${local.name_prefix}"
   resource_group_name         = azurerm_resource_group.this.name
   location                    = var.location
   sku                         = "premium"
-  managed_resource_group_name = "rg-dbw-${local.name_prefix}-managed"
+  managed_resource_group_name = "databricks-rg-dbw-${local.name_prefix}"
   tags                        = local.tags
 }
 
 # ---------------------------------------------------------------------------
-# Key Vault: backs the Databricks secret scope (scope itself is created in
-# the workspace, see README)
+# Key Vault: holds the SQL admin password and backs the Databricks secret
+# scope "shopsphere-kv" (see workspace.tf)
+# Name: kv-shopsphere-dev27
 # ---------------------------------------------------------------------------
 resource "azurerm_key_vault" "this" {
-  name                       = "kv-${local.name_prefix}-${var.name_suffix}"
+  name                       = "kv-${local.name_prefix}${var.name_suffix}"
   resource_group_name        = azurerm_resource_group.this.name
   location                   = var.location
   tenant_id                  = data.azurerm_client_config.current.tenant_id
@@ -89,14 +94,23 @@ resource "azurerm_key_vault" "this" {
   tags                       = local.tags
 }
 
-resource "azurerm_role_assignment" "kv_admin" {
+# You write secrets into the vault
+resource "azurerm_role_assignment" "kv_secrets_officer" {
   scope                = azurerm_key_vault.this.id
-  role_definition_name = "Key Vault Administrator"
+  role_definition_name = "Key Vault Secrets Officer"
   principal_id         = data.azurerm_client_config.current.object_id
+}
+
+# The Azure Databricks service reads secrets for the secret scope
+resource "azurerm_role_assignment" "kv_databricks_reader" {
+  scope                = azurerm_key_vault.this.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = var.databricks_service_principal_id
 }
 
 # ---------------------------------------------------------------------------
 # Event Hubs (Basic tier) for the clickstream generator in Week 3
+# Not built yet. Names follow the same pattern as the rest.
 # ---------------------------------------------------------------------------
 resource "azurerm_eventhub_namespace" "this" {
   name                = "evhns-${local.name_prefix}-${var.name_suffix}"
@@ -114,10 +128,11 @@ resource "azurerm_eventhub" "clickstream" {
 }
 
 # ---------------------------------------------------------------------------
-# Azure SQL (Basic tier) holds the Olist orders, customers and payments
+# Azure SQL (Basic tier) holds the Olist data
+# Server: sql-shopsphere-dev27, database: shopsphere_olist
 # ---------------------------------------------------------------------------
 resource "azurerm_mssql_server" "this" {
-  name                         = "sql-${local.name_prefix}-${var.name_suffix}"
+  name                         = "sql-${local.name_prefix}${var.name_suffix}"
   resource_group_name          = azurerm_resource_group.this.name
   location                     = var.location
   version                      = "12.0"
@@ -128,15 +143,16 @@ resource "azurerm_mssql_server" "this" {
 }
 
 resource "azurerm_mssql_database" "olist" {
-  name        = "olist"
+  name        = "shopsphere_olist"
   server_id   = azurerm_mssql_server.this.id
   sku_name    = "Basic"
   max_size_gb = 2
   tags        = local.tags
 }
 
+# Current home IP (the rule is named allow-my-ip-2 in Azure)
 resource "azurerm_mssql_firewall_rule" "client" {
-  name             = "allow-client-ip"
+  name             = "allow-my-ip-2"
   server_id        = azurerm_mssql_server.this.id
   start_ip_address = var.sql_client_ip
   end_ip_address   = var.sql_client_ip
@@ -150,10 +166,11 @@ resource "azurerm_mssql_firewall_rule" "azure_services" {
 }
 
 # ---------------------------------------------------------------------------
-# Cost control: monthly budget with an alert at 80% (PLAN.md section 10)
+# Cost control: monthly budget with alerts at 80% and 100% (PLAN.md section 10)
+# Name: shopsphere-monthly
 # ---------------------------------------------------------------------------
 resource "azurerm_consumption_budget_subscription" "monthly" {
-  name            = "budget-${local.name_prefix}"
+  name            = "shopsphere-monthly"
   subscription_id = "/subscriptions/${var.subscription_id}"
   amount          = var.budget_amount
   time_grain      = "Monthly"
@@ -165,6 +182,13 @@ resource "azurerm_consumption_budget_subscription" "monthly" {
   notification {
     enabled        = true
     threshold      = 80
+    operator       = "GreaterThan"
+    contact_emails = [var.budget_alert_email]
+  }
+
+  notification {
+    enabled        = true
+    threshold      = 100
     operator       = "GreaterThan"
     contact_emails = [var.budget_alert_email]
   }

@@ -1,0 +1,50 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC # Bronze: orders, customers and payments from Azure SQL (JDBC)
+# MAGIC
+# MAGIC Reads the Olist tables from `sql-shopsphere-dev27 / shopsphere_olist` and writes
+# MAGIC `shopsphere_dev.bronze.raw_orders`, `raw_customers` and `raw_payments`.
+# MAGIC
+# MAGIC The SQL password comes from the `shopsphere-kv` secret scope (Key Vault secret
+# MAGIC `sql-admin-password`), never from this notebook. Lakeflow Connect could replace this
+# MAGIC later; JDBC is simpler to start with.
+# MAGIC Status: run successfully on 2026-10-18 (DBR 17.3 LTS, single node).
+
+# COMMAND ----------
+
+CATALOG = "shopsphere_dev"
+JDBC_URL = (
+    "jdbc:sqlserver://sql-shopsphere-dev27.database.windows.net:1433;"
+    "database=shopsphere_olist;encrypt=true;trustServerCertificate=false;loginTimeout=30"
+)
+SQL_USER = "sqladmin"
+SQL_PASSWORD = dbutils.secrets.get(scope="shopsphere-kv", key="sql-admin-password")
+
+from pyspark.sql import functions as F
+
+# Azure SQL table -> bronze table
+SOURCES = {
+    "olist_orders": "raw_orders",
+    "olist_customers": "raw_customers",
+    "olist_order_payments": "raw_payments",
+}
+
+for source_table, bronze_table in SOURCES.items():
+    df = (
+        spark.read.format("jdbc")
+        .option("url", JDBC_URL)
+        .option("dbtable", f"dbo.{source_table}")
+        .option("user", SQL_USER)
+        .option("password", SQL_PASSWORD)
+        .load()
+        .withColumn("_ingest_ts", F.current_timestamp())
+        .withColumn("_source_file", F.lit(f"azure_sql:shopsphere_olist.dbo.{source_table}"))
+    )
+
+    # Full reload each run for now. Incremental (CDC or watermark) comes in Week 4 with AUTO CDC.
+    (
+        df.write.mode("overwrite")
+        .option("overwriteSchema", "true")
+        .saveAsTable(f"{CATALOG}.bronze.{bronze_table}")
+    )
+    print(f"{bronze_table}: {spark.table(f'{CATALOG}.bronze.{bronze_table}').count()} rows")

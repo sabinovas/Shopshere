@@ -1,6 +1,10 @@
 # ---------------------------------------------------------------------------
 # Unity Catalog: metastore -> workspace, storage credential, external
 # locations, catalogs and schemas (PLAN.md sections 5 and Week 1)
+#
+# Matches the environment built by hand. Metastore: shopsphere-metastore
+# (cc322171-…), credential: sc-shopsphere-dev, external location for
+# uc-managed: el-uc-managed-dev, catalog: shopsphere_dev.
 # ---------------------------------------------------------------------------
 
 resource "databricks_metastore_assignment" "this" {
@@ -27,7 +31,7 @@ resource "databricks_storage_credential" "lake" {
 resource "databricks_external_location" "lake" {
   provider        = databricks.workspace
   for_each        = toset(["landing", "uc-managed", "checkpoints"])
-  name            = "el-${each.key}"
+  name            = "el-${each.key}-${var.environment}"
   url             = "abfss://${each.key}@${azurerm_storage_account.lake.name}.dfs.core.windows.net/"
   credential_name = databricks_storage_credential.lake.name
   comment         = "ShopSphere ${each.key} container"
@@ -42,14 +46,13 @@ locals {
   }
 }
 
+# No storage_root: the existing catalog uses the metastore's default storage.
+# Setting one would force the catalog to be replaced.
 resource "databricks_catalog" "this" {
-  provider     = databricks.workspace
-  for_each     = toset(var.catalog_envs)
-  name         = "shopsphere_${each.key}"
-  comment      = "ShopSphere ${each.key} catalog"
-  storage_root = "abfss://uc-managed@${azurerm_storage_account.lake.name}.dfs.core.windows.net/${each.key}"
-
-  depends_on = [databricks_external_location.lake]
+  provider = databricks.workspace
+  for_each = toset(var.catalog_envs)
+  name     = "shopsphere_${each.key}"
+  comment  = "ShopSphere ${each.key} catalog"
 }
 
 resource "databricks_schema" "this" {
