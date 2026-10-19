@@ -68,4 +68,10 @@ result = {
     "quarantine": quarantine,
 }
 print(result)
+
+# Fail the task (and so the job, which then emails) if a structural check breaks.
+# Warn-level expectation failures are reported above but don't fail the run.
+assert checks["customers_with_two_current_rows"] == 0, "SCD2: a customer has two current versions"
+assert checks["fact_rows"] == checks["order_item_rows"], "fact_sales and silver.order_items row counts differ"
+assert checks["fact_rows"] > 0, "fact_sales is empty"
 dbutils.notebook.exit(str(result))

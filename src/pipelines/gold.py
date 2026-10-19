@@ -21,6 +21,25 @@ from pyspark.sql import functions as F
 CATALOG = spark.conf.get("shopsphere.catalog", "shopsphere_dev")
 SILVER = f"{CATALOG}.silver"
 GOLD = f"{CATALOG}.gold"
+OPS = f"{CATALOG}.ops"
+
+# PII mask and regional row filter on dim_customer (functions in src/governance/governance.sql).
+# Off by default: switch on with the pipeline configuration shopsphere.apply_governance = true,
+# after the groups exist and the pipeline owner is in data_engineers.
+APPLY_GOVERNANCE = spark.conf.get("shopsphere.apply_governance", "false").lower() == "true"
+DIM_CUSTOMER_GOVERNANCE = (
+    {
+        "schema": f"""
+            customer_sk BIGINT, customer_id STRING,
+            customer_unique_id STRING MASK {OPS}.mask_pii,
+            customer_zip_code_prefix STRING MASK {OPS}.mask_pii,
+            customer_city STRING, customer_state STRING,
+            valid_from TIMESTAMP, valid_to TIMESTAMP, is_current BOOLEAN""",
+        "row_filter": f"ROW FILTER {OPS}.state_filter ON (customer_state)",
+    }
+    if APPLY_GOVERNANCE
+    else {}
+)
 
 # COMMAND ----------
 
@@ -29,7 +48,11 @@ GOLD = f"{CATALOG}.gold"
 
 # COMMAND ----------
 
-@dlt.table(name=f"{GOLD}.dim_customer", comment="Customer dimension, one row per customer version (SCD Type 2)")
+@dlt.table(
+    name=f"{GOLD}.dim_customer",
+    comment="Customer dimension, one row per customer version (SCD Type 2)",
+    **DIM_CUSTOMER_GOVERNANCE,
+)
 @dlt.expect_or_fail("customer_sk_present", "customer_sk IS NOT NULL")
 def dim_customer():
     return spark.read.table(f"{SILVER}.customers_scd2").select(

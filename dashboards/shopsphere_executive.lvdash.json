@@ -1,0 +1,942 @@
+{
+  "datasets": [
+    {
+      "name": "totals",
+      "displayName": "totals",
+      "queryLines": [
+        "SELECT MEASURE(`Orders`) AS orders, MEASURE(`Gross Revenue`) AS revenue,\n       MEASURE(`Avg Order Value`) AS aov, MEASURE(`Avg Delivery Days`) AS delivery_days,\n       MEASURE(`Late Delivery Rate`) AS late_rate\nFROM shopsphere_dev.gold.sales_metrics"
+      ]
+    },
+    {
+      "name": "monthly",
+      "displayName": "monthly",
+      "queryLines": [
+        "SELECT `Order Month` AS month, MEASURE(`Gross Revenue`) AS revenue, MEASURE(`Orders`) AS orders,\n       MEASURE(`Avg Delivery Days`) AS delivery_days, MEASURE(`Late Delivery Rate`) AS late_rate\nFROM shopsphere_dev.gold.sales_metrics\nWHERE `Order Month` >= DATE'2017-01-01' AND `Order Month` < DATE'2018-09-01'\nGROUP BY ALL"
+      ]
+    },
+    {
+      "name": "category",
+      "displayName": "category",
+      "queryLines": [
+        "SELECT `Category` AS category, MEASURE(`Gross Revenue`) AS revenue, MEASURE(`Orders`) AS orders\nFROM shopsphere_dev.gold.sales_metrics GROUP BY ALL ORDER BY revenue DESC LIMIT 10"
+      ]
+    },
+    {
+      "name": "payment",
+      "displayName": "payment",
+      "queryLines": [
+        "SELECT `Payment Type` AS payment_type, MEASURE(`Gross Revenue`) AS revenue\nFROM shopsphere_dev.gold.sales_metrics WHERE `Payment Type` IS NOT NULL GROUP BY ALL"
+      ]
+    },
+    {
+      "name": "seller_state",
+      "displayName": "seller state",
+      "queryLines": [
+        "SELECT `Seller State` AS seller_state, MEASURE(`Avg Delivery Days`) AS delivery_days,\n       MEASURE(`Late Delivery Rate`) AS late_rate, MEASURE(`Orders`) AS orders\nFROM shopsphere_dev.gold.sales_metrics GROUP BY ALL HAVING MEASURE(`Orders`) >= 500 ORDER BY late_rate DESC"
+      ]
+    },
+    {
+      "name": "funnel_totals",
+      "displayName": "funnel totals",
+      "queryLines": [
+        "SELECT MEASURE(`Sessions`) AS sessions, MEASURE(`View To Cart Rate`) AS view_to_cart,\n       MEASURE(`Cart To Purchase Rate`) AS cart_to_purchase, MEASURE(`Conversion Rate`) AS conversion\nFROM shopsphere_dev.gold.funnel_metrics"
+      ]
+    },
+    {
+      "name": "funnel_stages",
+      "displayName": "funnel stages",
+      "queryLines": [
+        "SELECT stage, sessions FROM (\n  SELECT '1. Viewed' AS stage, SUM(sessions_with_view) AS sessions FROM shopsphere_dev.gold.funnel_conversion\n  UNION ALL SELECT '2. Added to cart', SUM(sessions_with_cart) FROM shopsphere_dev.gold.funnel_conversion\n  UNION ALL SELECT '3. Purchased', SUM(sessions_with_purchase) FROM shopsphere_dev.gold.funnel_conversion)"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "sales",
+      "displayName": "Sales",
+      "layout": [
+        {
+          "widget": {
+            "name": "t_sales",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## ShopSphere sales",
+                "Olist orders 2016–2018. Canceled and unavailable orders excluded. Source: `gold.sales_metrics`."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "c_revenue",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [
+                    {
+                      "name": "revenue",
+                      "expression": "`revenue`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "revenue",
+                  "displayName": "Gross revenue",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Gross revenue"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_orders",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [
+                    {
+                      "name": "orders",
+                      "expression": "`orders`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "orders",
+                  "displayName": "Orders",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Orders"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_aov",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [
+                    {
+                      "name": "aov",
+                      "expression": "`aov`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "aov",
+                  "displayName": "Average order value",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Average order value"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "l_revenue",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "revenue",
+                      "expression": "`revenue`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "month",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Month"
+                },
+                "y": {
+                  "fieldName": "revenue",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Revenue",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Gross revenue by month"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "b_category",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "category",
+                  "fields": [
+                    {
+                      "name": "category",
+                      "expression": "`category`"
+                    },
+                    {
+                      "name": "revenue",
+                      "expression": "`revenue`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "category",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Category"
+                },
+                "y": {
+                  "fieldName": "revenue",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Revenue",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Top 10 categories by revenue"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 4,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "b_payment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "payment",
+                  "fields": [
+                    {
+                      "name": "payment_type",
+                      "expression": "`payment_type`"
+                    },
+                    {
+                      "name": "revenue",
+                      "expression": "`revenue`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "payment_type",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Payment type"
+                },
+                "y": {
+                  "fieldName": "revenue",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Revenue",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Revenue by payment type"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 11,
+            "width": 2,
+            "height": 7
+          }
+        }
+      ]
+    },
+    {
+      "name": "delivery",
+      "displayName": "Delivery",
+      "layout": [
+        {
+          "widget": {
+            "name": "t_delivery",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Delivery",
+                "Days from purchase to delivery, and the share of orders delivered after the estimated date."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "c_days",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [
+                    {
+                      "name": "delivery_days",
+                      "expression": "`delivery_days`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "delivery_days",
+                  "displayName": "Average delivery days",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Average delivery days"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_late",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [
+                    {
+                      "name": "late_rate",
+                      "expression": "`late_rate`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "late_rate",
+                  "displayName": "Late delivery rate",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Late delivery rate"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 2,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "l_days",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "delivery_days",
+                      "expression": "`delivery_days`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "month",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Month"
+                },
+                "y": {
+                  "fieldName": "delivery_days",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Days",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Average delivery days by month"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "l_late",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monthly",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "late_rate",
+                      "expression": "`late_rate`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "month",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Month"
+                },
+                "y": {
+                  "fieldName": "late_rate",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Late rate",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Late delivery rate by month"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 5,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "b_state",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "seller_state",
+                  "fields": [
+                    {
+                      "name": "seller_state",
+                      "expression": "`seller_state`"
+                    },
+                    {
+                      "name": "late_rate",
+                      "expression": "`late_rate`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "seller_state",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Seller state"
+                },
+                "y": {
+                  "fieldName": "late_rate",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Late rate",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Late delivery rate by seller state (500+ orders)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    },
+    {
+      "name": "funnel",
+      "displayName": "Funnel",
+      "layout": [
+        {
+          "widget": {
+            "name": "t_funnel",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Clickstream funnel",
+                "Synthetic clickstream from the Faker generator, sessionized in `silver.sessions`. Source: `gold.funnel_metrics`."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "c_sessions",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "funnel_totals",
+                  "fields": [
+                    {
+                      "name": "sessions",
+                      "expression": "`sessions`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sessions",
+                  "displayName": "Sessions",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Sessions"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_cart",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "funnel_totals",
+                  "fields": [
+                    {
+                      "name": "view_to_cart",
+                      "expression": "`view_to_cart`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "view_to_cart",
+                  "displayName": "View → cart",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "View → cart"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_conv",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "funnel_totals",
+                  "fields": [
+                    {
+                      "name": "conversion",
+                      "expression": "`conversion`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "conversion",
+                  "displayName": "Conversion",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Conversion"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "b_funnel",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "funnel_stages",
+                  "fields": [
+                    {
+                      "name": "stage",
+                      "expression": "`stage`"
+                    },
+                    {
+                      "name": "sessions",
+                      "expression": "`sessions`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "stage",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Stage"
+                },
+                "y": {
+                  "fieldName": "sessions",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Sessions",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Sessions reaching each stage"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    }
+  ]
+}

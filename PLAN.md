@@ -121,10 +121,10 @@ shopsphere/
 - ✅ *Deliverable:* a working medallion pipeline with a data-quality report
 
 ### Week 5: Orchestration, BI and governance
-- [ ] A Lakeflow Job with a multi-task DAG: ingest → pipeline → quality checks → refresh dashboards; add retries and email alerts
-- [ ] A serverless SQL warehouse; an AI/BI dashboard (sales, delivery, funnel); a **Genie** space
-- [ ] Metric views for consistent KPIs; optional Power BI connection
-- [ ] Column masks, row filters and grants; review lineage in Catalog Explorer
+- [x] A Lakeflow Job with a multi-task DAG: ingest → pipeline → quality checks → refresh dashboards; add retries and email alerts
+- [x] A serverless SQL warehouse; an AI/BI dashboard (sales, delivery, funnel); a **Genie** space
+- [x] Metric views for consistent KPIs; optional Power BI connection (Power BI skipped)
+- [ ] Column masks, row filters and grants; review lineage in Catalog Explorer (lineage reviewed; grants, masks and filter written in `src/governance/governance.sql`, waiting for approval)
 - ✅ *Deliverable:* an executive dashboard, plus a Genie demo with 5 example questions
 
 ### Week 6: Machine learning
