@@ -128,11 +128,11 @@ shopsphere/
 - ✅ *Deliverable:* an executive dashboard, plus a Genie demo with 5 example questions
 
 ### Week 6: Machine learning
-- [ ] Feature tables in UC: RFM, order frequency, review score, delivery delays
-- [ ] Churn model: an AutoML baseline, then a custom XGBoost model tuned with Optuna, tracked in MLflow
-- [ ] Register the model in UC with `@champion` and `@challenger` aliases
-- [ ] Demand forecasting per product category (Prophet or Spark ML)
-- [ ] Model Serving endpoint plus nightly batch scoring; Lakehouse Monitoring for drift
+- [x] Feature tables in UC: RFM, order frequency, review score, delivery delays
+- [x] Churn model: an AutoML baseline, then a custom XGBoost model tuned with Optuna, tracked in MLflow
+- [x] Register the model in UC with `@champion` and `@challenger` aliases
+- [x] Demand forecasting per product category (Prophet or Spark ML)
+- [x] Model Serving endpoint plus nightly batch scoring; Lakehouse Monitoring for drift
 - ✅ *Deliverable:* a served churn model and a predictions table
 
 ### Week 7: GenAI and the app
