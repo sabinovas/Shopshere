@@ -1,0 +1,8 @@
+command: ["streamlit", "run", "app.py", "--server.headless", "true"]
+env:
+  - name: WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  - name: AGENT_ENDPOINT
+    valueFrom: agent-endpoint
+  - name: CATALOG
+    value: shopsphere_dev

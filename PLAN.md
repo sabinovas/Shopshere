@@ -136,11 +136,11 @@ shopsphere/
 - ✅ *Deliverable:* a served churn model and a predictions table
 
 ### Week 7: GenAI and the app
-- [ ] Parse PDFs (`ai_parse_document`) and support tickets; chunk them into a Delta table
-- [ ] A Vector Search index (Delta Sync) over product descriptions and tickets
-- [ ] A RAG agent with the Mosaic AI Agent Framework that can call tools (look up order status from Gold tables); evaluate it with Agent Evaluation
-- [ ] `ai_query` / `ai_classify` in SQL to tag ticket sentiment and topic
-- [ ] A **Databricks App** (Streamlit) with a chat UI, a churn-risk lookup and KPI tiles
+- [x] Parse PDFs (`ai_parse_document`) and support tickets; chunk them into a Delta table
+- [x] A Vector Search index (Delta Sync) over product descriptions and tickets
+- [x] A RAG agent with the Mosaic AI Agent Framework that can call tools (look up order status from Gold tables); evaluate it with Agent Evaluation
+- [x] `ai_query` / `ai_classify` in SQL to tag ticket sentiment and topic
+- [x] A **Databricks App** (Streamlit) with a chat UI, a churn-risk lookup and KPI tiles
 - ✅ *Deliverable:* a working "ShopSphere Assistant" app
 
 ### Week 8: CI/CD, sharing, FinOps and polish
