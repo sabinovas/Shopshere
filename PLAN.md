@@ -124,7 +124,7 @@ shopsphere/
 - [x] A Lakeflow Job with a multi-task DAG: ingest → pipeline → quality checks → refresh dashboards; add retries and email alerts
 - [x] A serverless SQL warehouse; an AI/BI dashboard (sales, delivery, funnel); a **Genie** space
 - [x] Metric views for consistent KPIs; optional Power BI connection (Power BI skipped)
-- [ ] Column masks, row filters and grants; review lineage in Catalog Explorer (lineage reviewed; grants applied 2026-11-08 to account groups data_engineers, analysts, data_scientists; mask and row-filter functions created; applying them to `gold.dim_customer` waits for the pipeline owner to join data_engineers)
+- [x] Column masks, row filters and grants; review lineage in Catalog Explorer (grants to account groups; `customer_unique_id` and zip masked and a regional row filter on `gold.dim_customer` since 2026-11-08)
 - ✅ *Deliverable:* an executive dashboard, plus a Genie demo with 5 example questions
 
 ### Week 6: Machine learning
