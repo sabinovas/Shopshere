@@ -3,9 +3,9 @@
 -- NOT RUN YET. Review and run on a SQL warehouse as the catalog owner or a metastore admin.
 -- Statements are separated by lines with only ';;' (for run_sql.ps1).
 --
--- Groups (created 2026-10-19 in the workspace): data_engineers, analysts, data_scientists, partners.
--- Unity Catalog grants need ACCOUNT groups. If a GRANT fails with "principal does not exist",
--- the groups are workspace-local: create them in the account console instead, then rerun.
+-- Groups: data_engineers, analysts, data_scientists, partners. Unity Catalog grants need ACCOUNT
+-- groups: the first run (2026-11-08) failed with "Could not find principal" because the Week 5
+-- groups were workspace-local, so the four were created at account level and the script rerun.
 --
 -- Before enabling the masks, add the pipeline owner to data_engineers. The pipeline reads
 -- gold.dim_customer to build customer_rfm; if the owner were masked, RFM would group by
@@ -33,7 +33,6 @@ GRANT USE SCHEMA, SELECT, CREATE TABLE, CREATE FUNCTION, CREATE MODEL ON SCHEMA 
 -- Partners: nothing here; they get gold.product_performance through Delta Sharing (Week 8)
 
 -- 2. Mask and filter functions ---------------------------------------------------------------
-;;
 -- Shows the value to data engineers and data scientists, a masked value to everyone else
 CREATE OR REPLACE FUNCTION shopsphere_dev.ops.mask_pii(value STRING)
 RETURNS STRING
