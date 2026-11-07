@@ -145,7 +145,7 @@ shopsphere/
 
 ### Week 8: CI/CD, sharing, FinOps and polish
 - [x] Convert everything to **Asset Bundles**; set up dev, test and prod targets
-- [ ] A GitHub Actions or Azure DevOps pipeline: lint → pytest → `bundle validate` → deploy to dev → manual approval → prod (written in `.github/workflows/ci.yml`, lint and tests pass locally; first GitHub run waits for the push and the deploy secrets)
+- [ ] A GitHub Actions or Azure DevOps pipeline: lint → pytest → `bundle validate` → deploy to dev → manual approval → prod (`.github/workflows/ci.yml`: first GitHub run green on 2026-11-08 for lint, tests and validation; the test/prod deploy stages are skipped until the deploy secrets and catalogs exist)
 - [ ] **Delta Sharing:** share `gold.product_performance` with a partner recipient (share created; the recipient grant waits for approval)
 - [x] A **FinOps dashboard** on `system.billing.usage`, `system.compute`, `system.access.audit`: cost by job, cost by user, idle clusters
 - [x] Cluster policies, a performance tuning write-up, and Photon on/off benchmarks
