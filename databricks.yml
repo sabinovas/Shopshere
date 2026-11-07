@@ -1,0 +1,79 @@
+# ShopSphere Databricks Asset Bundle (Week 8)
+#
+# Deploys the medallion pipeline, the daily job and the executive dashboard from this repo.
+# The workspace host comes from the environment (DATABRICKS_HOST) or a CLI profile, so no
+# workspace URL or ID is committed. Typical use:
+#
+#   databricks bundle validate                 # check the configuration (dev)
+#   databricks bundle deploy                   # deploy to dev
+#   databricks bundle run shopsphere_daily     # run the daily job
+#   databricks bundle validate -t prod         # check another target
+#
+# The GenAI agent, its endpoint and the Databricks App are deployed by
+# src/genai/21_agent_build_and_deploy.py (agents.deploy) and kept out of the bundle, so a
+# deploy never restarts billable app compute by itself.
+
+bundle:
+  name: shopsphere
+
+include:
+  - resources/*.yml
+
+sync:
+  exclude:
+    - docs/**     # local command logs with IDs and emails; never uploaded
+    - infra/**    # Terraform runs locally, not in the workspace
+
+variables:
+  catalog:
+    description: Unity Catalog catalog of this environment
+    default: shopsphere_dev
+  warehouse_id:
+    description: SQL warehouse for the dashboard and its refresh task
+    lookup:
+      warehouse: shopsphere-sql-serverless
+  alert_email:
+    description: Where job failure emails go
+    default: ${workspace.current_user.userName}
+  ml_spark_version:
+    description: Runtime of the shared job cluster (ML runtime, for the churn tasks)
+    default: 16.4.x-cpu-ml-scala2.12
+  node_type_id:
+    description: The subscription's regional quota is 4 cores, so one 4-core node is the limit
+    default: Standard_D4ds_v5
+  schedule_status:
+    description: PAUSED keeps the daily schedule off to save cost
+    default: PAUSED
+  cluster_policy_id:
+    description: Cost rules for job clusters (infra/policies/shopsphere_single_node.json)
+    lookup:
+      cluster_policy: shopsphere-single-node
+
+targets:
+  dev:
+    mode: development
+    default: true
+    resources:
+      dashboards:
+        executive:
+          # Keep the dashboard in the folder it was created in (Week 5): moving it to the bundle
+          # folder would delete and recreate it, changing its ID and URL
+          parent_path: /Users/${workspace.current_user.userName}/shopsphere
+        finops:
+          parent_path: /Users/${workspace.current_user.userName}/shopsphere
+
+  test:
+    # Same workspace, separate catalog, deployed into the deploying identity's own folder. shopsphere_test
+    # doesn't exist yet: validate only until it (and its storage locations) are created.
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: shopsphere_test
+
+  prod:
+    mode: production
+    # Deploys as the identity running the CLI (in CI: the service principal).
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: shopsphere_prod

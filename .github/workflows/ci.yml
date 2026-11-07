@@ -1,0 +1,89 @@
+# ShopSphere CI/CD: lint -> unit tests -> bundle validate -> deploy test -> manual approval -> deploy prod
+#
+# One-time setup in GitHub (Settings):
+#   Secrets:      DATABRICKS_HOST, DATABRICKS_CLIENT_ID, DATABRICKS_CLIENT_SECRET
+#                 (OAuth machine-to-machine credentials of a Databricks service principal)
+#   Variables:    DEPLOY_ENABLED = true   (leave unset until the shopsphere_test / shopsphere_prod
+#                 catalogs and their storage exist; until then only checks and validation run)
+#   Environments: "test" and "production"; give "production" a required reviewer, which is the
+#                 manual approval step before prod.
+#
+# The dev target is not deployed from CI: it belongs to a developer, and a second dev deployment
+# by the service principal would try to own the same shopsphere_dev tables.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+  DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+  DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+
+jobs:
+  checks:
+    name: Lint and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Unit tests (pytest)
+        run: pytest -q
+
+  validate:
+    name: Bundle validate (dev, test, prod)
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - name: Validate every target
+        if: env.DATABRICKS_HOST != ''
+        run: |
+          for t in dev test prod; do
+            echo "::group::$t"
+            databricks bundle validate -t "$t"
+            echo "::endgroup::"
+          done
+      - name: Skip note
+        if: env.DATABRICKS_HOST == ''
+        run: echo "DATABRICKS_HOST secret not set; bundle validation skipped."
+
+  deploy-test:
+    name: Deploy to test
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - run: databricks bundle deploy -t test
+
+  deploy-prod:
+    name: Deploy to prod (after approval)
+    needs: deploy-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - run: databricks bundle deploy -t prod

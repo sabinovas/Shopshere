@@ -109,9 +109,9 @@ after_modules = pandas_modules(model)
 assert np.allclose(p_before, p_after), "sanitizing changed the predictions"
 assert not any("indexes.numeric" in m for m in after_modules), f"pandas 1.x index types still referenced: {after_modules}"
 print("pandas modules before:", before_modules, "| after:", after_modules)
-reqs = [l.strip() for l in open(mlflow.pyfunc.get_model_dependencies(uri)).read().splitlines() if l.strip()]
-reqs = [SERVING_PINS.get(l.split("==")[0].strip().lower(), l) for l in reqs]
-for name, pin in SERVING_PINS.items():
+reqs = [r.strip() for r in open(mlflow.pyfunc.get_model_dependencies(uri)).read().splitlines() if r.strip()]
+reqs = [SERVING_PINS.get(r.split("==")[0].strip().lower(), r) for r in reqs]
+for pin in SERVING_PINS.values():
     if pin not in reqs:
         reqs.append(pin)
 

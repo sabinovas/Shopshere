@@ -13,7 +13,8 @@
 
 # COMMAND ----------
 
-CATALOG = "shopsphere_dev"
+dbutils.widgets.text("catalog", "shopsphere_dev")  # set per target by the bundle job
+CATALOG = dbutils.widgets.get("catalog")
 JDBC_URL = (
     "jdbc:sqlserver://sql-shopsphere-dev27.database.windows.net:1433;"
     "database=shopsphere_olist;encrypt=true;trustServerCertificate=false;loginTimeout=30"

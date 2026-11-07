@@ -21,7 +21,7 @@ import openai
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.sql import StatementParameterListItem, StatementState
 from mlflow.pyfunc import ChatAgent
-from mlflow.types.agent import ChatAgentChunk, ChatAgentMessage, ChatAgentResponse, ChatContext
+from mlflow.types.agent import ChatAgentMessage, ChatAgentResponse, ChatContext
 
 CONFIG = mlflow.models.ModelConfig(
     development_config={

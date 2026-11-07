@@ -1,0 +1,27 @@
+[project]
+name = "shopsphere"
+version = "0.8.0"
+description = "End-to-end retail lakehouse on Azure Databricks (portfolio project)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+extend-exclude = [".venv", "infra"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = [
+    "E501",  # long SQL strings and descriptions
+    "B905",  # zip() without strict is intentional in the generators
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Databricks notebooks: spark, dbutils and display are injected by the runtime, imports follow
+# %pip / %run cells, and expressions on their own line render output
+"src/**/*.py" = ["F821", "E402", "B018", "I001"]
+"tests/*.py" = ["I001"]  # conftest is imported by path

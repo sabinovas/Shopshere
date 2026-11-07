@@ -21,7 +21,8 @@
 from databricks.feature_engineering import FeatureEngineeringClient
 from pyspark.sql import functions as F
 
-CATALOG = "shopsphere_dev"
+dbutils.widgets.text("catalog", "shopsphere_dev")  # set per target by the bundle job
+CATALOG = dbutils.widgets.get("catalog")
 GOLD, SILVER, ML = f"{CATALOG}.gold", f"{CATALOG}.silver", f"{CATALOG}.ml"
 FEATURES = f"{ML}.features_customer"
 LABELS = f"{ML}.churn_labels"

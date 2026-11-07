@@ -1,0 +1,9 @@
+resources:
+  dashboards:
+    executive:
+      display_name: ShopSphere Executive
+      # Built by dashboards/build_dashboard.py. Its queries name shopsphere_dev tables, so
+      # other targets need the builder run with their catalog first.
+      file_path: ../dashboards/shopsphere_executive.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+      embed_credentials: false

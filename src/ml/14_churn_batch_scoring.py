@@ -14,7 +14,8 @@ import pandas as pd
 from mlflow import MlflowClient
 from pyspark.sql import functions as F
 
-CATALOG = "shopsphere_dev"
+dbutils.widgets.text("catalog", "shopsphere_dev")  # set per target by the bundle job
+CATALOG = dbutils.widgets.get("catalog")
 ML = f"{CATALOG}.ml"
 MODEL = f"{ML}.churn_model"
 PREDICTIONS = f"{ML}.churn_predictions"

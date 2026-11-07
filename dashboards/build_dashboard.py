@@ -130,6 +130,7 @@ dashboard = {
     "pages": pages,
 }
 
-out = Path(__file__).with_name("shopsphere_executive.lvdash.json")
-out.write_text(json.dumps(dashboard, indent=2, ensure_ascii=False), encoding="utf-8")
-print(f"wrote {out}")
+if __name__ == "__main__":
+    out = Path(__file__).with_name("shopsphere_executive.lvdash.json")
+    out.write_text(json.dumps(dashboard, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"wrote {out}")

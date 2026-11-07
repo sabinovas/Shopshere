@@ -11,7 +11,8 @@
 
 from pyspark.sql import functions as F
 
-CATALOG = "shopsphere_dev"
+dbutils.widgets.text("catalog", "shopsphere_dev")  # set per target by the bundle job
+CATALOG = dbutils.widgets.get("catalog")
 EVENT_LOG = f"{CATALOG}.ops.pipeline_event_log"
 
 latest_update = spark.sql(f"""

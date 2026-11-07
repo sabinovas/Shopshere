@@ -11,7 +11,8 @@
 
 # COMMAND ----------
 
-CATALOG = "shopsphere_dev"
+dbutils.widgets.text("catalog", "shopsphere_dev")  # set per target by the bundle job
+CATALOG = dbutils.widgets.get("catalog")
 LANDING = "abfss://landing@stshopspheredev27.dfs.core.windows.net"
 CHECKPOINTS = "abfss://checkpoints@stshopspheredev27.dfs.core.windows.net/bronze"
 

@@ -1,0 +1,17 @@
+{
+  "spark_version": {
+    "type": "allowlist",
+    "values": ["17.3.x-scala2.13", "17.3.x-cpu-ml-scala2.13", "16.4.x-scala2.12", "16.4.x-cpu-ml-scala2.12"],
+    "defaultValue": "17.3.x-scala2.13"
+  },
+  "node_type_id": { "type": "allowlist", "values": ["Standard_D4ds_v5"], "defaultValue": "Standard_D4ds_v5" },
+  "driver_node_type_id": { "type": "fixed", "value": "Standard_D4ds_v5", "hidden": true },
+  "num_workers": { "type": "fixed", "value": 0, "hidden": true },
+  "spark_conf.spark.databricks.cluster.profile": { "type": "fixed", "value": "singleNode", "hidden": true },
+  "spark_conf.spark.master": { "type": "fixed", "value": "local[*, 4]", "hidden": true },
+  "custom_tags.ResourceClass": { "type": "fixed", "value": "SingleNode", "hidden": true },
+  "custom_tags.project": { "type": "fixed", "value": "shopsphere" },
+  "autotermination_minutes": { "type": "range", "minValue": 5, "maxValue": 10, "isOptional": true },
+  "data_security_mode": { "type": "allowlist", "values": ["SINGLE_USER"], "defaultValue": "SINGLE_USER" },
+  "runtime_engine": { "type": "allowlist", "values": ["STANDARD", "PHOTON"], "defaultValue": "STANDARD" }
+}

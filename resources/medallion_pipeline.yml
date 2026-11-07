@@ -1,0 +1,22 @@
+resources:
+  pipelines:
+    medallion:
+      name: shopsphere-medallion-${bundle.target}
+      catalog: ${var.catalog}
+      schema: silver
+      serverless: true
+      continuous: false
+      channel: CURRENT
+      libraries:
+        - notebook:
+            path: ../src/pipelines/silver.py
+        - notebook:
+            path: ../src/pipelines/gold.py
+      configuration:
+        shopsphere.catalog: ${var.catalog}
+        # Turn on after src/governance/governance.sql has been run (masks and row filter)
+        shopsphere.apply_governance: "false"
+      event_log:
+        catalog: ${var.catalog}
+        schema: ops
+        name: pipeline_event_log

@@ -144,18 +144,18 @@ shopsphere/
 - ✅ *Deliverable:* a working "ShopSphere Assistant" app
 
 ### Week 8: CI/CD, sharing, FinOps and polish
-- [ ] Convert everything to **Asset Bundles**; set up dev, test and prod targets
-- [ ] A GitHub Actions or Azure DevOps pipeline: lint → pytest → `bundle validate` → deploy to dev → manual approval → prod
-- [ ] **Delta Sharing:** share `gold.product_performance` with a partner recipient
-- [ ] A **FinOps dashboard** on `system.billing.usage`, `system.compute`, `system.access.audit`: cost by job, cost by user, idle clusters
-- [ ] Cluster policies, a performance tuning write-up, and Photon on/off benchmarks
+- [x] Convert everything to **Asset Bundles**; set up dev, test and prod targets
+- [ ] A GitHub Actions or Azure DevOps pipeline: lint → pytest → `bundle validate` → deploy to dev → manual approval → prod (written in `.github/workflows/ci.yml`, lint and tests pass locally; first GitHub run waits for the push and the deploy secrets)
+- [ ] **Delta Sharing:** share `gold.product_performance` with a partner recipient (share created; the recipient grant waits for approval)
+- [x] A **FinOps dashboard** on `system.billing.usage`, `system.compute`, `system.access.audit`: cost by job, cost by user, idle clusters
+- [x] Cluster policies, a performance tuning write-up, and Photon on/off benchmarks
 - ✅ *Deliverable:* a one-click deployment, a cost dashboard and the final README
 
 ## 9. Portfolio checklist
-- [ ] README with the architecture diagram, tech stack and screenshots
+- [ ] README with the architecture diagram, tech stack and screenshots (README done; screenshots still to add)
 - [ ] A 5-minute demo video (dashboard → Genie → app → CI/CD run)
 - [ ] A blog post or LinkedIn write-up on one hard problem (for example, SCD2 with AUTO CDC, or streaming state)
-- [ ] Cost summary ("whole project built for about $X")
+- [x] Cost summary ("whole project built for about $X"): about $68 of Databricks list cost in October, 81% Vector Search (README and FinOps dashboard)
 
 ## 10. Cost control
 - Use serverless compute where you can; set auto-termination to 10 minutes on any classic cluster

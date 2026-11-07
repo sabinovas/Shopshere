@@ -54,7 +54,7 @@ def build_pdf(title: str, sections, path: Path) -> int:
     lines = [("title", title), ("small", DISCLAIMER), ("gap", "")]
     for heading, body in sections:
         lines.append(("heading", heading))
-        lines += [("body", l) for l in textwrap.wrap(body, 92)]
+        lines += [("body", line) for line in textwrap.wrap(body, 92)]
         lines.append(("gap", ""))
 
     style = {"title": (18, 26), "heading": (12, 18), "body": (10, 14), "small": (8, 12), "gap": (10, 8)}

@@ -1,0 +1,650 @@
+{
+  "datasets": [
+    {
+      "name": "totals",
+      "displayName": "totals",
+      "queryLines": [
+        "WITH priced AS (\n  SELECT u.*, u.usage_quantity * p.pricing.default AS list_usd\n  FROM system.billing.usage u\n  LEFT JOIN system.billing.list_prices p\n    ON u.sku_name = p.sku_name AND u.usage_unit = p.usage_unit\n   AND u.usage_end_time >= p.price_start_time\n   AND (p.price_end_time IS NULL OR u.usage_end_time < p.price_end_time)\n  WHERE u.usage_date >= current_date() - INTERVAL 30 DAYS)\nSELECT round(sum(list_usd), 2) AS cost_30d,\n       round(sum(CASE WHEN date_trunc('month', usage_date) = date_trunc('month', current_date()) THEN list_usd END), 2) AS cost_this_month,\n       round(sum(CASE WHEN date_trunc('month', usage_date) = date_trunc('month', current_date()) THEN list_usd END) / 50, 4) AS budget_used,\n       round(sum(usage_quantity), 1) AS dbus_30d\nFROM priced"
+      ]
+    },
+    {
+      "name": "daily_by_product",
+      "displayName": "daily by product",
+      "queryLines": [
+        "WITH priced AS (\n  SELECT u.*, u.usage_quantity * p.pricing.default AS list_usd\n  FROM system.billing.usage u\n  LEFT JOIN system.billing.list_prices p\n    ON u.sku_name = p.sku_name AND u.usage_unit = p.usage_unit\n   AND u.usage_end_time >= p.price_start_time\n   AND (p.price_end_time IS NULL OR u.usage_end_time < p.price_end_time)\n  WHERE u.usage_date >= current_date() - INTERVAL 30 DAYS)\nSELECT usage_date, billing_origin_product AS product, round(sum(list_usd), 2) AS cost_usd\nFROM priced GROUP BY ALL"
+      ]
+    },
+    {
+      "name": "by_product",
+      "displayName": "by product",
+      "queryLines": [
+        "WITH priced AS (\n  SELECT u.*, u.usage_quantity * p.pricing.default AS list_usd\n  FROM system.billing.usage u\n  LEFT JOIN system.billing.list_prices p\n    ON u.sku_name = p.sku_name AND u.usage_unit = p.usage_unit\n   AND u.usage_end_time >= p.price_start_time\n   AND (p.price_end_time IS NULL OR u.usage_end_time < p.price_end_time)\n  WHERE u.usage_date >= current_date() - INTERVAL 30 DAYS)\nSELECT billing_origin_product AS product, round(sum(list_usd), 2) AS cost_usd, round(sum(usage_quantity), 1) AS dbus\nFROM priced GROUP BY ALL ORDER BY cost_usd DESC"
+      ]
+    },
+    {
+      "name": "by_job",
+      "displayName": "by job",
+      "queryLines": [
+        "WITH priced AS (\n  SELECT u.*, u.usage_quantity * p.pricing.default AS list_usd\n  FROM system.billing.usage u\n  LEFT JOIN system.billing.list_prices p\n    ON u.sku_name = p.sku_name AND u.usage_unit = p.usage_unit\n   AND u.usage_end_time >= p.price_start_time\n   AND (p.price_end_time IS NULL OR u.usage_end_time < p.price_end_time)\n  WHERE u.usage_date >= current_date() - INTERVAL 30 DAYS),\njobs AS (SELECT job_id, name FROM system.lakeflow.jobs QUALIFY row_number() OVER (PARTITION BY job_id ORDER BY change_time DESC) = 1)\nSELECT coalesce(j.name, concat('job ', p.usage_metadata.job_id)) AS job, round(sum(p.list_usd), 2) AS cost_usd,\n       count(DISTINCT p.usage_metadata.job_run_id) AS runs\nFROM priced p LEFT JOIN jobs j ON p.usage_metadata.job_id = j.job_id\nWHERE p.usage_metadata.job_id IS NOT NULL GROUP BY ALL ORDER BY cost_usd DESC"
+      ]
+    },
+    {
+      "name": "by_user",
+      "displayName": "by user",
+      "queryLines": [
+        "WITH priced AS (\n  SELECT u.*, u.usage_quantity * p.pricing.default AS list_usd\n  FROM system.billing.usage u\n  LEFT JOIN system.billing.list_prices p\n    ON u.sku_name = p.sku_name AND u.usage_unit = p.usage_unit\n   AND u.usage_end_time >= p.price_start_time\n   AND (p.price_end_time IS NULL OR u.usage_end_time < p.price_end_time)\n  WHERE u.usage_date >= current_date() - INTERVAL 30 DAYS)\nSELECT coalesce(identity_metadata.run_as, identity_metadata.owned_by, 'serverless / shared') AS identity,\n       round(sum(list_usd), 2) AS cost_usd\nFROM priced GROUP BY ALL ORDER BY cost_usd DESC"
+      ]
+    },
+    {
+      "name": "clusters",
+      "displayName": "clusters",
+      "queryLines": [
+        "WITH latest AS (\n  SELECT * FROM system.compute.clusters QUALIFY row_number() OVER (PARTITION BY cluster_id ORDER BY change_time DESC) = 1),\nutil AS (\n  SELECT cluster_id, round(avg(cpu_user_percent + cpu_system_percent), 1) AS avg_cpu_pct, count(*) AS minutes_up\n  FROM system.compute.node_timeline WHERE start_time >= current_date() - INTERVAL 30 DAYS GROUP BY cluster_id)\nSELECT l.cluster_name, l.cluster_source, l.worker_node_type AS node_type, l.auto_termination_minutes,\n       u.minutes_up, u.avg_cpu_pct,\n       CASE WHEN l.cluster_source = 'UI' AND (l.auto_termination_minutes IS NULL OR l.auto_termination_minutes = 0 OR l.auto_termination_minutes > 10)\n              THEN 'auto-termination off or > 10 min'\n            WHEN u.avg_cpu_pct < 10 THEN 'mostly idle (CPU < 10%)'\n            ELSE 'ok' END AS finding\nFROM latest l LEFT JOIN util u USING (cluster_id)\nWHERE l.delete_time IS NULL\nORDER BY u.minutes_up DESC NULLS LAST"
+      ]
+    },
+    {
+      "name": "audit",
+      "displayName": "audit",
+      "queryLines": [
+        "SELECT service_name, count(*) AS events, count(DISTINCT user_identity.email) AS identities\nFROM system.access.audit WHERE event_date >= current_date() - INTERVAL 7 DAYS\nGROUP BY ALL ORDER BY events DESC LIMIT 12"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "cost",
+      "displayName": "Cost",
+      "layout": [
+        {
+          "widget": {
+            "name": "t_cost",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## ShopSphere FinOps",
+                "Databricks list cost in USD for the last 30 days (usage × list price from system tables). Azure VM and storage charges are billed separately. Budget: $50/month."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "c_month",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [
+                    {
+                      "name": "cost_this_month",
+                      "expression": "`cost_this_month`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "cost_this_month",
+                  "displayName": "Cost this month",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "USD",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Cost this month"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_budget",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [
+                    {
+                      "name": "budget_used",
+                      "expression": "`budget_used`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "budget_used",
+                  "displayName": "Monthly budget used",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 0
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Monthly budget used"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_dbus",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [
+                    {
+                      "name": "dbus_30d",
+                      "expression": "`dbus_30d`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "dbus_30d",
+                  "displayName": "DBUs, last 30 days",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "DBUs, last 30 days"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "b_daily",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "daily_by_product",
+                  "fields": [
+                    {
+                      "name": "usage_date",
+                      "expression": "`usage_date`"
+                    },
+                    {
+                      "name": "cost_usd",
+                      "expression": "`cost_usd`"
+                    },
+                    {
+                      "name": "product",
+                      "expression": "`product`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "usage_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "usage_date"
+                },
+                "y": {
+                  "fieldName": "cost_usd",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "List cost (USD)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "USD",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "product",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "product"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Daily cost by product"
+              },
+              "mark": {
+                "layout": "stack"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "b_product",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "by_product",
+                  "fields": [
+                    {
+                      "name": "product",
+                      "expression": "`product`"
+                    },
+                    {
+                      "name": "cost_usd",
+                      "expression": "`cost_usd`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "product",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "product"
+                },
+                "y": {
+                  "fieldName": "cost_usd",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "List cost (USD)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "USD",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Cost by product"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 3,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "b_user",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "by_user",
+                  "fields": [
+                    {
+                      "name": "identity",
+                      "expression": "`identity`"
+                    },
+                    {
+                      "name": "cost_usd",
+                      "expression": "`cost_usd`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "identity",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "identity"
+                },
+                "y": {
+                  "fieldName": "cost_usd",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "List cost (USD)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "USD",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Cost by identity"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 12,
+            "width": 3,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_jobs",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "by_job",
+                  "fields": [
+                    {
+                      "name": "job",
+                      "expression": "`job`"
+                    },
+                    {
+                      "name": "runs",
+                      "expression": "`runs`"
+                    },
+                    {
+                      "name": "cost_usd",
+                      "expression": "`cost_usd`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "job",
+                    "displayName": "job"
+                  },
+                  {
+                    "fieldName": "runs",
+                    "displayName": "runs"
+                  },
+                  {
+                    "fieldName": "cost_usd",
+                    "displayName": "cost_usd"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Cost by job"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ]
+    },
+    {
+      "name": "compute",
+      "displayName": "Compute and audit",
+      "layout": [
+        {
+          "widget": {
+            "name": "t_compute",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Clusters and activity",
+                "Clusters with auto-termination off or above 10 minutes, or average CPU under 10%, are flagged (PLAN.md section 10)."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_clusters",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "clusters",
+                  "fields": [
+                    {
+                      "name": "cluster_name",
+                      "expression": "`cluster_name`"
+                    },
+                    {
+                      "name": "cluster_source",
+                      "expression": "`cluster_source`"
+                    },
+                    {
+                      "name": "node_type",
+                      "expression": "`node_type`"
+                    },
+                    {
+                      "name": "auto_termination_minutes",
+                      "expression": "`auto_termination_minutes`"
+                    },
+                    {
+                      "name": "minutes_up",
+                      "expression": "`minutes_up`"
+                    },
+                    {
+                      "name": "avg_cpu_pct",
+                      "expression": "`avg_cpu_pct`"
+                    },
+                    {
+                      "name": "finding",
+                      "expression": "`finding`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "cluster_name",
+                    "displayName": "cluster_name"
+                  },
+                  {
+                    "fieldName": "cluster_source",
+                    "displayName": "cluster_source"
+                  },
+                  {
+                    "fieldName": "node_type",
+                    "displayName": "node_type"
+                  },
+                  {
+                    "fieldName": "auto_termination_minutes",
+                    "displayName": "auto_termination_minutes"
+                  },
+                  {
+                    "fieldName": "minutes_up",
+                    "displayName": "minutes_up"
+                  },
+                  {
+                    "fieldName": "avg_cpu_pct",
+                    "displayName": "avg_cpu_pct"
+                  },
+                  {
+                    "fieldName": "finding",
+                    "displayName": "finding"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Clusters (last 30 days)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_audit",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "audit",
+                  "fields": [
+                    {
+                      "name": "service_name",
+                      "expression": "`service_name`"
+                    },
+                    {
+                      "name": "events",
+                      "expression": "`events`"
+                    },
+                    {
+                      "name": "identities",
+                      "expression": "`identities`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "service_name",
+                    "displayName": "service_name"
+                  },
+                  {
+                    "fieldName": "events",
+                    "displayName": "events"
+                  },
+                  {
+                    "fieldName": "identities",
+                    "displayName": "identities"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Audit events by service (last 7 days)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 6,
+            "height": 7
+          }
+        }
+      ]
+    }
+  ]
+}
